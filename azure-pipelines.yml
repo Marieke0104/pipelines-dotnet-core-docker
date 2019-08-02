@@ -14,6 +14,7 @@ variables:
   imageRepository: 'mariekepipelinesdotnetcoredocker'
   containerRegistry: 'imagesps.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
+  powershellPath: '$(Build.SourcesDirectory)/Lock.ps1'
   tag: '$(Build.BuildId)'
   
   # Agent VM image name
@@ -40,5 +41,22 @@ stages:
         containerRegistry: $(dockerRegistryServiceConnection)
         tags: |
           $(tag)
-#steps:
-# - script: docker build -t $(dockerId)/$(imageName) .  # add options to this command to meet your needs
+ 
+  - job: Test
+    displayName: PowerShell task
+  
+    pool:
+      VmImage: 'ubuntu latest'
+
+    steps:
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          buildType: 'current'
+          targetPath: $(powershellPath)
+
+      - task: AzurePowerShell@4
+        displayName: 'Azure PowerShell script: FilePath'
+        inputs:
+          azureSubscription: 'stedin-digital-platform-poc-001'
+          ScriptPath: '$(Pipeline.Workspace)/drop/Lock.ps1'
+          azurePowerShellVersion: LatestVersion
